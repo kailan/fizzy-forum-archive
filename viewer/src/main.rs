@@ -1,5 +1,5 @@
 use fastly::{
-    http::StatusCode,
+    http::{header, StatusCode},
     Error, Request, Response,
 };
 use include_dir::{include_dir, Dir, DirEntry};
@@ -8,9 +8,18 @@ use structure::{ExportMetadata, Post, ThreadMetadata};
 mod templates;
 
 static CONTENT_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../crawler/out");
+static PASSWORD: &str = "Basic <base64 encoded user:pass pair here>";
 
 #[fastly::main]
 fn main(req: Request) -> Result<Response, Error> {
+    if let Some(credential) = req.get_header(header::AUTHORIZATION) {
+        if credential.to_str().unwrap_or_default() != PASSWORD {
+            return Ok(reject_auth());
+        }
+    } else {
+        return Ok(reject_auth());
+    }
+
     let resp = match req.get_path() {
         "/" => Response::from_body(templates::render_index_page(&get_export_metadata())),
         _ if req.get_path().starts_with("/forum/") && req.get_path().contains("/thread/") => {
@@ -48,9 +57,7 @@ fn main(req: Request) -> Result<Response, Error> {
                 .find(&format!("{}/{}/*.json", forum_id, thread_id))
                 .unwrap()
                 .map(|f| match f {
-                    DirEntry::File(f) => {
-                        serde_json::from_str(f.contents_utf8().unwrap()).unwrap()
-                    }
+                    DirEntry::File(f) => serde_json::from_str(f.contents_utf8().unwrap()).unwrap(),
                     _ => panic!("Unexpected directory entry"),
                 })
                 .collect();
@@ -113,4 +120,9 @@ fn get_threads_for_forum(forum_id: &str) -> Vec<ThreadMetadata> {
             .unwrap(),
     )
     .unwrap()
+}
+
+fn reject_auth() -> Response {
+    Response::from_status(StatusCode::UNAUTHORIZED)
+        .with_header(header::WWW_AUTHENTICATE, "Basic realm=DIZZY")
 }

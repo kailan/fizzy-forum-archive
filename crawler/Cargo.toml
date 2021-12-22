@@ -1,0 +1,16 @@
+[package]
+name = "crawler"
+version = "0.1.0"
+edition = "2021"
+
+publish = false
+
+[dependencies]
+structure = { path = "../structure" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.11.8", features = ["json"] }
+anyhow = "1.0.51"
+tokio = { version = "1.15.0", features = ["rt", "macros", "rt-multi-thread"] }
+chrono = { version = "0.4.19", features = ["serde"] }
+hostname = "^0.3"

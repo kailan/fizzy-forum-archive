@@ -3,40 +3,75 @@ mod types;
 
 use std::fs;
 
+use chrono::Utc;
 use requests::*;
 use reqwest::Client;
+
 use types::*;
 
 use anyhow::Result;
 
-const COOKIE: &str = "<REPLACE ME>";
+const COOKIE: &str = "<replace me>";
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = Client::new();
 
+    println!("Starting export...");
+
+    let mut export = structure::ExportMetadata {
+        generated_at: Utc::now(),
+        generated_hostname: hostname::get().map(|h| h.to_str().unwrap().to_string()).unwrap_or_else(|_| "Unknown".to_string()),
+        forums: vec![],
+    };
+
+    fs::create_dir_all("out")?;
+
     println!("Fetching forum index...");
     let forums = fetch_forums(&client).await?;
 
-    fs::create_dir_all("out")?;
-    fs::write("out/forums.json".to_string(), serde_json::to_string_pretty(&forums)?)?;
-
     for forum in forums {
+        let mut thread_index: Vec<structure::ThreadMetadata> = vec![];
+
         println!("Fetching topic index for forum '{}' ({})", forum.name, forum.id);
         let topics = fetch_topics(&client, &forum).await?;
 
-        for topic in topics {
-            fs::create_dir_all(format!("out/{}/{}", forum.id, topic.id))?;
-            fs::write(format!("out/{}/{}/topic.json", forum.id, topic.id), serde_json::to_string_pretty(&topic)?)?;
+        fs::create_dir_all(format!("out/{}", forum.id))?;
 
+        for topic in topics {
             println!("Fetching post index for topic {}", topic.id);
             let posts = fetch_posts(&client, &forum, &topic).await?;
 
+            let initial_post = posts.last().expect("no posts in topic");
+
+            let thread = structure::ThreadMetadata {
+                id: topic.id,
+                title: initial_post.content.title.text.clone(),
+                owner: topic.owner.into(),
+            };
+
+            fs::create_dir_all(format!("out/{}/{}", forum.id, thread.id))?;
+
             for post in posts {
-                fs::write(format!("out/{}/{}/post-{}.json", forum.id, topic.id, post.id), serde_json::to_string_pretty(&post)?)?;
+                let post = structure::Post {
+                    id: post.id,
+                    owner: structure::User { id: post.poster_id, name: post.poster_name, profile_image: None },
+                    created_date: post.created_date.parse().expect("invalid date format"),
+                    modified_date: None, // TODO
+                    content: post.content.text.text,
+                };
+
+                fs::write(format!("out/{}/{}/{}.json", forum.id, thread.id, post.id), serde_json::to_string_pretty(&post)?)?;
             }
+
+            thread_index.push(thread);
         }
+
+        fs::write(format!("out/{}/threads.json", forum.id), serde_json::to_string_pretty(&thread_index)?)?;
+        export.forums.push(structure::ForumMetadata { id: forum.id, title: forum.name, post_count: forum.posts });
     }
+
+    fs::write("out/export.json".to_string(), serde_json::to_string_pretty(&export)?)?;
 
     Ok(())
 }

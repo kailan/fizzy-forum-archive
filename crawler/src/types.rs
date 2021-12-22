@@ -49,6 +49,16 @@ pub struct User {
     pub profile_image: Option<String>,
 }
 
+impl From<User> for structure::User {
+    fn from(user: User) -> Self {
+        structure::User {
+            id: user.id,
+            name: user.name,
+            profile_image: user.profile_image,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Board {

@@ -1,0 +1,24 @@
+* {
+	box-sizing: border-box;
+}
+
+html, body {
+	min-height: 100%;
+	background: #f1f1f1;
+	color: #000;
+}
+
+body {
+	font-size: 1.2rem;
+	text-rendering: optimizeLegibility;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+h1, h2, h3 {
+  margin: 0;
+}
+
+.header, .content {
+  margin-top: 16px;
+  margin-left: 16px;
+}

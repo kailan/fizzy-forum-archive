@@ -8,17 +8,19 @@
   </head>
   <body>
     <div class="header">
-      <h1>Fizzy Forum Archive</h1>
+      <a href="/"><img src="/dizzy_logo.svg" alt="DIZZY"/></a>
+      <h3>Forum Archive</h3>
     </div>
     <div class="content">
-      <ul>
-        {{- for post in posts }}
+      <h1>{ thread.title }</h1>
+      {{- for post in posts }}
+        <div class="post">
           <p>
             { post.content }
           </p>
-          <pre> – { post.owner.name }, { post.created_date }</pre>
-        {{- endfor }}
-      </ul>
+          <pre class="author"> – { post.owner.name }, { post.created_date }, likes: { post.likes | vec_counter }</pre>
+        </div>
+      {{- endfor }}
     </div>
   </body>
 </html>

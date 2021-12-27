@@ -42,4 +42,5 @@ pub struct Post {
   pub created_date: DateTime<Utc>,
   pub modified_date: Option<DateTime<Utc>>,
   pub content: String,
+  pub likes: Vec<User>
 }

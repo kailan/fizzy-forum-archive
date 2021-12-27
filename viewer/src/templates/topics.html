@@ -8,13 +8,14 @@
   </head>
   <body>
     <div class="header">
-      <h1>Fizzy Forum Archive</h1>
+      <a href="/"><img src="/dizzy_logo.svg" alt="DIZZY"/></a>
+      <h3>Forum Archive</h3>
     </div>
     <div class="content">
       <ul>
         {{- for thread in threads }}
           <li>
-            <a href="/forum/{ forum.id }/thread/{ thread.id }">{ thread.title }</a>
+            <a href="/forum/{ forum.id }/thread/{ thread.id }">{ thread.title }</a> – { thread.owner.name }
           </li>
         {{- endfor }}
       </ul>

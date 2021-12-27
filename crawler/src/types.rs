@@ -79,6 +79,8 @@ pub struct Post {
     pub modified_name: Option<String>,
     #[serde(rename = "post")]
     pub content: PostContent,
+    #[serde(default)]
+    pub likes: Vec<PostReaction>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -93,4 +95,14 @@ pub struct PostContent {
 pub struct LocalContent {
     pub locale: String,
     pub text: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PostReaction {
+    #[serde(rename = "pid")]
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "pimg")]
+    pub profile_image: Option<String>,
+    pub reaction: String
 }

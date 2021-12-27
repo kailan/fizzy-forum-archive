@@ -59,6 +59,13 @@ async fn main() -> Result<()> {
                     created_date: post.created_date.parse().expect("invalid date format"),
                     modified_date: None, // TODO
                     content: post.content.text.text,
+                    likes: post.likes.into_iter().map(|r| {
+                        structure::User {
+                            id: r.id,
+                            name: r.name,
+                            profile_image: r.profile_image,
+                        }
+                    }).collect(),
                 };
 
                 fs::write(format!("out/{}/{}/{}.json", forum.id, thread.id, post.id), serde_json::to_string_pretty(&post)?)?;

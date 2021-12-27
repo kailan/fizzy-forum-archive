@@ -1,6 +1,6 @@
 use fastly::{
     http::{header, StatusCode},
-    Error, Request, Response,
+    Error, Request, Response, mime,
 };
 use include_dir::{include_dir, Dir, DirEntry};
 use structure::{ExportMetadata, Post, ThreadMetadata};
@@ -21,7 +21,7 @@ fn main(req: Request) -> Result<Response, Error> {
     }
 
     let resp = match req.get_path() {
-        "/" => Response::from_body(templates::render_index_page(&get_export_metadata())),
+        "/" => Response::from_body(templates::render_index_page(&mut get_export_metadata())),
         _ if req.get_path().starts_with("/forum/") && req.get_path().contains("/thread/") => {
             let mut split = req.get_path().split('/');
             let forum_id = split.nth(2).unwrap();
@@ -92,7 +92,8 @@ fn main(req: Request) -> Result<Response, Error> {
 
             Response::from_body(templates::render_forum_page(forum, threads))
         }
-        "/style.css" => Response::from_body(include_str!("templates/style.css")),
+        "/style.css" => Response::from_body(include_str!("templates/style.css")).with_content_type(mime::TEXT_CSS),
+        "/dizzy_logo.svg" => Response::from_body(include_str!("templates/dizzy_logo.svg")).with_content_type(mime::IMAGE_SVG),
         _ => Response::from_body(templates::render_error_page("Page not found"))
             .with_status(StatusCode::NOT_FOUND),
     };

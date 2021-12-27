@@ -1,6 +1,6 @@
 use fastly::{
     http::{header, StatusCode},
-    Error, Request, Response, mime,
+    mime, Error, Request, Response,
 };
 use include_dir::{include_dir, Dir, DirEntry};
 use structure::{ExportMetadata, Post, ThreadMetadata};
@@ -12,6 +12,15 @@ static PASSWORD: &str = "Basic <base64 encoded user:pass pair here>";
 
 #[fastly::main]
 fn main(req: Request) -> Result<Response, Error> {
+    // basic responses
+    if req.get_method() != "GET" {
+        return Ok(Response::from_status(StatusCode::METHOD_NOT_ALLOWED));
+    }
+    if req.get_path() == "/robots.txt" {
+        return Ok(Response::from_body("User-agent: *\nDisallow: /"));
+    }
+
+    // http auth
     if let Some(credential) = req.get_header(header::AUTHORIZATION) {
         if credential.to_str().unwrap_or_default() != PASSWORD {
             return Ok(reject_auth());
@@ -20,6 +29,7 @@ fn main(req: Request) -> Result<Response, Error> {
         return Ok(reject_auth());
     }
 
+    // main endpoints
     let resp = match req.get_path() {
         "/" => Response::from_body(templates::render_index_page(&mut get_export_metadata())),
         _ if req.get_path().starts_with("/forum/") && req.get_path().contains("/thread/") => {
@@ -92,8 +102,12 @@ fn main(req: Request) -> Result<Response, Error> {
 
             Response::from_body(templates::render_forum_page(forum, threads))
         }
-        "/style.css" => Response::from_body(include_str!("templates/style.css")).with_content_type(mime::TEXT_CSS),
-        "/dizzy_logo.svg" => Response::from_body(include_str!("templates/dizzy_logo.svg")).with_content_type(mime::IMAGE_SVG),
+        "/style.css" => Response::from_body(include_str!("templates/style.css"))
+            .with_content_type(mime::TEXT_CSS)
+            .with_header(header::CACHE_CONTROL, "public, max-age=86400"),
+        "/dizzy_logo.svg" => Response::from_body(include_str!("templates/dizzy_logo.svg"))
+            .with_content_type(mime::IMAGE_SVG)
+            .with_header(header::CACHE_CONTROL, "public, max-age=86400"),
         _ => Response::from_body(templates::render_error_page("Page not found"))
             .with_status(StatusCode::NOT_FOUND),
     };
